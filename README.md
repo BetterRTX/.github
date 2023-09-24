@@ -38,3 +38,11 @@ Sun shadow clarity has also been heavily improved, through both reducing the sun
 | Vanilla Sun Shadows | BetterRTX Sun Shadows |
 | :-: | :-: |
 | ![](./images/sun_shadow/shadow_rtx.png) | ![](./images/sun_shadow/shadow_brtx.png) |
+
+## Revamped Atmosphere
+Previously, the atmosphere visuals were achieved through projecting a texture onto the sky and slowly animating a texture throughout a day/night cycle, with each frame corresponding to a different time of day. This approach exhibited several caveats. Due to the low resolution of the texture (64x32 per frame), artifacts such as colour banding were prevalent throughout the sky. There were even some downscaling artifacts between frames, with colour from one bleeding into the next (leading to a dark dot at the zenith). BetterRTX solves all of these issues through introducing a physically based simulation of rayleigh and mie scattering to render the atmosphere.
+| Vanilla at Dawn | BetterRTX at Dawn |
+| :-: | :-: |
+| ![](./images/atmosphere/dawn_rtx.png) | ![](./images/atmosphere/dawn_brtx.png) |
+
+The percieved brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere wasn't sampled when determining exposure value.
