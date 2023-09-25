@@ -1,9 +1,9 @@
 # Introduction
 **BetterRTX** is the first Ray Tracing shader mod created for Minecraft's Bedrock Edition (Win 10/11). It is a communal effort to fix and improve upon the rendering features already present within Minecraft's official Ray Tracing imlementation. 
 
-The project was created a developed by a voluntary team brought together by the shared goal of giving Minecraft RTX the care it deserves, that which Mojang does not provide. It works through a decompile/edit/recompile process where the decompiled shader code is improved and then recompiled and injected back into the game files.
+The project was created by a voluntary team brought together by the shared goal of giving Minecraft RTX the care it deserves, that which Mojang does not provide. It works through a decompile/edit/recompile process where the decompiled shader code is improved and then recompiled to be injected back into the game files.
 
-At the moment, the team consists of two developers, several playtesters and a release manager. As developers, myself and the other programmer consistently pushed new fixes and rendering features as the mod progressed, and the team of playtesters provided feedback on both the visuals and performance on a wide range of devices. Testing was done on GPUs from Nvidia, Intel and AMD in order to determine the viability of many feature additions with our performance goals in mind. In its current state, BetterRTX has a near-negligible effect on performance in most cases.
+At the moment, the team consists of two developers, several playtesters and a release manager. Myself and the other developer consistently pushed new fixes and rendering features as the mod progressed, after which the playtesters provided feedback on both the visuals and performance on a wide range of devices. Testing was conducted with GPUs from Nvidia, Intel and AMD in order to determine the viability of the feature additions with our performance goals in mind. In its current state, BetterRTX has a near-negligible effect on performance in most cases.
 
 Due to the nature of the mod's creation process, the source code likely contains a sizeable portion of Minecraft's original shader code (even despite the inconsitencies that our decompiling process introduces), so publishing it on Github may lead to a DMCA takedown. It is for this reason that I am instead creating a repository that provides an overview of the major additions BetterRTX brings to the game, along with some snippets of the code used to implement the new features. 
 
@@ -173,3 +173,10 @@ if (numBounces == 0 && primaryHitInfo.hasHit()) {
 | Vanilla | BetterRTX |
 | :-: | :-: |
 | ![](./images/spectator/spectate_rtx.png) | ![](./images/spectator/spectate_brtx.png) |
+
+## Light Transmission
+Normally within Minecraft, placing any block with an explicit point light (Torches, End Rods, Lanterns) behind glass would fail to properly transmit its light through coloured materials. Emissive surfaces fail to properly transmit their emission in reflections as well. **BetterRTX** introduces a few changes that properly implement these missing features.
+| Vanilla | BetterRTX |
+| :-: | :-: |
+| ![](./images/transmission/point_light_rtx.png) | ![](./images/transmission/point_light_brtx.png) |
+| ![](./images/transmission/reflection_rtx.png) | ![](./images/transmission/reflection_brtx.png) |
