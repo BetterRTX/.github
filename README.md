@@ -187,6 +187,31 @@ finalColour /= mtotalWeight;
 Demo Video:
 [![](https://img.youtube.com/vi/vKGCLTsGEak/maxresdefault.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
 
+## Depth of Field
+Depth of field is achieved through simulating a camera with a circular aperture. Primary ray origins are offset by a random distance within the bounds of the aperture size, and are traced towards a focal point. Focal distance is determined automatically by using the extent of a few primary rays cast from the center of the screen. Over each frame, the current focal distance is slowly incremented towards the target focal distance through a lerp function. Since the path tracer runs at one sample per pixel, rendering the effect with large apertures introduces significant noise. A Gaussian blur is applied to the scene with varying intensity, depending on the distance from the focal point to each primary ray intersection to account for the noise.
+```cpp
+RayDesc generateThinLensCameraRay(float2 posNdcXy, inout rand_seed randSeed, float focusDistance, float apertureSize) {
+	RayDesc ray = generatePinholeCameraRay(posNdcXy);
+
+	float3 focalPoint = ray.Origin + ray.Direction * focusDistance;
+
+	float3 forwardVector = generatePinholeCameraRay(0).Direction;
+	float3 rightVector = float3(1, 0, 0);
+	float3 upVector = cross(forwardVector, rightVector);
+	rightVector = cross(upVector, forwardVector);
+
+	float2 apertureSample = getApertureSample(randSeed) * apertureSize;
+
+	ray.Origin = ray.Origin + rightVector * apertureSample.x + upVector * apertureSample.y;
+	ray.Direction = normalize(focalPoint - ray.Origin);
+
+	return ray;
+}
+```
+
+Demo Video:
+[![](https://img.youtube.com/vi/3kSjOb7tNYw/maxresdefault.jpg)](http://www.youtube.com/watch?v=3kSjOb7tNYw)
+
 # Bug Fixes:
 ## Spectator Mode
 Spectator is a game mode within Minecraft meant to provide players with the opportunity to spectate their worlds without interacting with anything. One of the headlining features of the game mode is the ability to see through the back faces of blocks while inside of them, enabling players to see within enclosed spaces without needing to be positioned inside such spaces. This feature unfortunately isn't functional with Ray Tracing by default. **BetterRTX** fixes the issue through a simple check for primary rays, replacing them with new rays placed behind the back faces of blocks should the original ray hit the back face of one.
