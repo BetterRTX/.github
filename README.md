@@ -48,7 +48,7 @@ Previously, the atmosphere visuals were achieved through projecting a texture on
 The percieved brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
 
 ## Water Parallax Mapping
-The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemened LOD system in place: normal mapping stops applying to the surface of water at a dissapointingly short distance from the camera. This lead to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The height of water is now varied over time through multiple noise samples, and visually displaced through a parallax mapping technique. 
+The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemened LOD system in place: normal mapping stops applying to the surface of water at a dissapointingly short distance from the camera. This lead to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The height of water is now varied over time through multiple noise samples, and visually displaced through a parallax mapping technique. Reflection quality has also been significantly improved through additions to the specular denoiser.
 ```cpp
 float calcWaterSurfaceHeight(float3 stepPos)
 {
@@ -73,3 +73,44 @@ float calcWaterSurfaceHeight(float3 stepPos)
 | Vanilla Water | BetterRTX Water |
 | :-: | :-: |
 | ![](./images/water/water_rtx.png) | ![](./images/water/water_brtx.png) |
+
+## Rain Puddles
+During weather events such as rainfall, Minecraft RTX only used to employ one addional visual effect: the sky would simply transition from its normal colour to uniform grey. **BetterRTX** takes much better advantage of Ray Traced rendering in order to greatly improve the visuals during rainfall. The mod adds increased volumetric fog during rainy weather, and implements puddles through mapping a noise function to the terrain. A ray is traced upwards from the puddle surface with a random offset to determine if the sky is reachable, in order to naturally transition from wet to dry spaces under rain-blocking geometry.
+```cpp
+float wetness = 0.0;
+bool isSurfaceFacingUpward = false;
+float rainLevel = getBiomeAdjustedRainLevel();
+if (rainLevel > 0.0 && objectCategory != OBJECT_CATEGORY_WATER && dot(geometryInfo.normal, float3(0.0, -1.0, 0.0)) <= 0.01)
+{
+	// send a ray upwards, sampled from a disk, to see if the surface should be wet
+	float2 u = loadBlueNoise2(1, 0, geometryInfo.uv * 65536.0);
+	float2 diskSample = sample_cosine_hemisphere_polar(u).xy * RAIN_SAMPLE_DISK_RADIUS;
+	float3 sampleDirection = normalize(float3(diskSample.x, 1.0, diskSample.y));
+
+	RayDesc ray;
+	ray.Origin = offset_ray(geometryInfo.position, geometryInfo.normal);
+	ray.Direction = sampleDirection;
+	ray.TMin = MIN_PRIMARY_DISTANCE;
+	ray.TMax = MAX_SECONDARY_DISTANCE;
+	HitInfo hitInfo;
+	TraceGenericRay(RAY_FLAG_NONE, INSTANCE_MASK_SHADOW, false, ray, hitInfo);
+
+	if (!hitInfo.hasHit())
+	{
+		float noise = 1.0;
+		isSurfaceFacingUpward = dot(geometryInfo.normal, float3(0.0, 1.0, 0.0)) > 0.5;
+		if (isSurfaceFacingUpward && objectInstance.flags & kObjectInstanceFlagChunk)
+		{
+			float3 noiseCoord = (geometryInfo.position - g_view.waveWorksOriginInSteveSpace) / RAIN_PUDDLE_SCALE;
+			noise = smoothstep(NOISE_MIN_THRESHOLD, NOISE_MAX_THRESHOLD, noise3(noiseCoord));
+		}
+		wetness = rainLevel * noise * RAIN_WETNESS_MULTIPLIER;
+		surfaceInfo.linearRoughness = lerp(surfaceInfo.linearRoughness, PUDDLE_ROUGHNESS, max(rainLevel * UNIFORM_WETNESS, wetness));
+		surfaceInfo.colour *= lerp(1.0, PUDDLE_COLOUR_REDUCTION, wetness);
+		surfaceInfo.metalness *= lerp(1.0, PUDDLE_METALNESS_REDUCTION, wetness);
+	}
+}
+```
+| Vanilla Rainfall | BetterRTX Rainfall |
+| :-: | :-: |
+| ![](./images/weather/rain_rtx.png) | ![](./images/weather/rain_brtx.png) |
