@@ -45,7 +45,7 @@ Previously, the atmosphere visuals were achieved through projecting a texture on
 | :-: | :-: |
 | ![](./images/atmosphere/dawn_rtx.png) | ![](./images/atmosphere/dawn_brtx.png) |
 
-The percieved brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
+The apparent brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
 
 ## Water Parallax Mapping
 The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemened LOD system in place: normal mapping stops applying to the surface of water at a dissapointingly short distance from the camera. This lead to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The height of water is now varied over time through multiple noise samples, and visually displaced through a parallax mapping technique. Reflection quality has also been significantly improved through additions to the specular denoiser.
@@ -151,6 +151,41 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 | Vanilla | BetterRTX |
 | :-: | :-: |
 | ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
+
+## Motion Blur
+After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's GPU Gems 3, and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by it's unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant of motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to current frametime to make the perceived motion blur intensity remain the same no matter the current framerate.
+```cpp
+// Get motion vector UV for this pixel
+float2 motionUv = inputBufferMotionVectors[ipos];
+// Full intensity at MOTION_BLUR_TARGET_FRAMETIME, make intensity inversely proportional to frametime
+float frameTimeFactor = MOTION_BLUR_TARGET_FRAMETIME / frameTime;
+// Multiply by display resolution to get velocity in pixels
+float2 motionPixels = -motionUv * MOTION_BLUR_INTENSITY * frameTimeFactor * g_view.displayResolution;
+// Clamp length to range from 0 to max motion blur length
+motionPixels *= saturate(MOTION_BLUR_MAX_LENGTH / length(motionPixels));
+
+// Distribute pixel velocity over sample count
+float2 velocity = motionPixels / float(MOTION_BLUR_SAMPLES);
+float2 spos = float2(ipos) + velocity;
+float mtotalWeight = 1.0;
+[unroll] for (uint s = 1; s < MOTION_BLUR_SAMPLES; s++, spos += velocity) {
+	if (any(spos <= 0) || any(spos >= g_view.renderResolution)) continue;
+	float2 thisMotionUv = inputBufferMotionVectors[round(spos)];
+	// Weigh by vector similarity so that motion blur doesn't sample from static areas
+	float sampleWeight = saturate(dot(thisMotionUv, motionUv) / dot(motionUv, motionUv));
+	mtotalWeight += sampleWeight;
+
+	// Sample the color buffer along the velocity vector
+	float3 currentColor = inputThisFrameTAAHistory[round(spos)].rgb;
+	// Add the weighted sample to final colour
+	finalColour += currentColor * sampleWeight;
+}
+
+// Average all of the samples to get the final blur colour
+finalColour /= mtotalWeight;
+```
+Demo Video:
+[![](http://img.youtube.com/vi/vKGCLTsGEak/0.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
 
 # Bug Fixes:
 ## Spectator Mode
