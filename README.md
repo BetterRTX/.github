@@ -185,7 +185,7 @@ float mtotalWeight = 1.0;
 finalColour /= mtotalWeight;
 ```
 Demo Video:
-[![](http://img.youtube.com/vi/vKGCLTsGEak/0.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
+[![](https://i3.ytimg.com/vi/vKGCLTsGEak/maxresdefault.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
 
 # Bug Fixes:
 ## Spectator Mode
