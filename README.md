@@ -1,15 +1,15 @@
 # Introduction
-**BetterRTX** is the first Ray Tracing shader mod created for Minecraft's Bedrock Edition (Win 10/11). It is a communal effort to fix and improve upon the rendering features already present within Minecraft's official Ray Tracing imlementation. 
+**BetterRTX** is the first Ray Tracing shader mod created for Minecraft's Bedrock Edition (Win 10/11). It is a communal effort to fix and improve upon the rendering features already present within Minecraft's official Ray Tracing implementation. 
 
-The project was created by a voluntary team brought together by the shared goal of giving Minecraft RTX the care it deserves, that which Mojang does not provide. It works through a decompile/edit/recompile process where the decompiled shader code is improved and then recompiled to be injected back into the game files.
+The project was created by a voluntary team brought together by the shared goal of giving Minecraft RTX the care it deserves, which Mojang does not provide. It works through a decompile/edit/recompile process where the decompiled shader code is improved and then recompiled to be injected back into the game files.
 
-At the moment, the team consists of two developers, several playtesters and a release manager. Myself and the other developer consistently pushed new fixes and rendering features as the mod progressed, after which the playtesters provided feedback on both the visuals and performance on a wide range of devices. Testing was conducted with GPUs from Nvidia, Intel and AMD in order to determine the viability of the feature additions with our performance goals in mind. In its current state, BetterRTX has a near-negligible effect on performance in most cases.
+At the moment, the team consists of two developers, several playtesters and a release manager. Myself and the other developer consistently pushed new fixes and rendering features as the mod progressed, after which the playtesters provided feedback on both the visuals and performance on a wide range of devices. Testing was conducted with GPUs from Nvidia, Intel and AMD to determine the viability of the feature additions with our performance goals in mind. In its current state, BetterRTX has a near-negligible effect on performance in most cases.
 
-Due to the nature of the mod's creation process, the source code likely contains a sizeable portion of Minecraft's original shader code (even despite the inconsitencies that our decompiling process introduces), so publishing it on Github may lead to a DMCA takedown. It is for this reason that I am instead creating a repository that provides an overview of the major additions BetterRTX brings to the game, along with some snippets of the code used to implement the new features. 
+Due to the nature of the mod's creation process, the source code likely contains a sizeable portion of Minecraft's original shader code (even despite the inconsistencies that our decompiling process introduces), so publishing it on GitHub may lead to a DMCA takedown. It is for this reason that I am instead creating a repository that provides an overview of the major additions BetterRTX brings to the game, along with some snippets of the code used to implement the new features. 
 
 # New Features:
 ## Sun and Shadows
-Various improvements to sun lighting have been introduced. The first of these improvements is in the azimuth and zenith of the sun's path throughout the day. Previously, the sun traveled along a path parallel to the world, leading to poor shading of block surfaces at nearly all times of the day. This directly led to poor visuals at noon, due to the apparent lack of shadows present. **BetterRTX** offsets the azimuth and zenith to avoid any situations where the sun is directly overhead. This is achieved through a matrix rotation of the `directionToSun` variable made available through the view buffer. The rotation is optionally invertable as it is used to change the direction of the sun texture.
+Various improvements to sun lighting have been introduced. The first of these improvements is in the azimuth and zenith of the sun's path throughout the day. Previously, the sun traveled along a path parallel to the world, leading to poor shading of block surfaces at nearly all times of the day. This directly led to poor visuals at noon, due to the apparent lack of shadows present. **BetterRTX** offsets the azimuth and zenith to avoid any situations where the sun is directly overhead. This is achieved through a matrix rotation of the `directionToSun` variable made available through the view buffer. The rotation is optionally invertible as it is used to change the direction of the sun's texture.
 ```cpp
 float3 rotateBySunAngle(float3 dir, bool inverse = false)
 {
@@ -34,13 +34,13 @@ float3 rotateBySunAngle(float3 dir, bool inverse = false)
 | :-: | :-: |
 | ![](./images/sun_shadow/noon_rtx.png) | ![](./images/sun_shadow/noon_brtx.png) |
 
-Sun shadow clarity has also been heavily improved, through both reducing the sun's sampling radius and through improving shadow filtering behaviours. 
+Sun shadow clarity has also been heavily improved, through both reducing the sun's sampling radius and improving shadow filtering behaviours. 
 | Vanilla Sun Shadows | BetterRTX Sun Shadows |
 | :-: | :-: |
 | ![](./images/sun_shadow/shadow_rtx.png) | ![](./images/sun_shadow/shadow_brtx.png) |
 
 ## Revamped Atmosphere
-Previously, the atmosphere visuals were achieved through projecting a texture onto the sky and slowly animating a texture throughout a day/night cycle, with each frame corresponding to a different time of day. This approach exhibited several caveats. Due to the low resolution of the texture (64x32 per frame), artifacts such as colour banding were prevalent throughout the sky. There were even some downscaling artifacts between frames, with colour from one bleeding into the next (leading to a dark dot at the zenith). BetterRTX solves all of these issues through introducing a physically based simulation of rayleigh and mie scattering to render the atmosphere.
+Previously, the atmosphere visuals were achieved by projecting a texture onto the sky and slowly animating it throughout a day/night cycle, with each frame corresponding to a different time of day. This approach exhibited several caveats. Due to the low resolution of the texture (64x32 per frame), artifacts such as colour banding were prevalent throughout the sky. There were even some downscaling artifacts between frames, with colour from one bleeding into the next (leading to a dark dot near the zenith). BetterRTX solves all of these issues through introducing a physically based simulation of Rayleigh and Mie scattering to render the atmosphere.
 | Vanilla at Dawn | BetterRTX at Dawn |
 | :-: | :-: |
 | ![](./images/atmosphere/dawn_rtx.png) | ![](./images/atmosphere/dawn_brtx.png) |
@@ -48,7 +48,7 @@ Previously, the atmosphere visuals were achieved through projecting a texture on
 The apparent brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
 
 ## Water Parallax Mapping
-The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemened LOD system in place: normal mapping stops applying to the surface of water at a dissapointingly short distance from the camera. This lead to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The height of water is now varied over time through multiple noise samples, and visually displaced through a parallax mapping technique. Reflection quality has also been significantly improved through additions to the specular denoiser.
+The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemented LOD system in place: normal mapping stops applying to the surface of water at a disappointingly short distance from the camera. This led to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The height of water is now varied over time through multiple noise samples and visually displaced through a parallax mapping technique. Reflection quality has also been significantly improved through additions to the specular denoiser.
 ```cpp
 float calcWaterSurfaceHeight(float3 stepPos)
 {
@@ -75,7 +75,7 @@ float calcWaterSurfaceHeight(float3 stepPos)
 | ![](./images/water/water_rtx.png) | ![](./images/water/water_brtx.png) |
 
 ## Rain Puddles
-During weather events such as rainfall, Minecraft RTX only used to employ one addional visual effect: the sky would simply transition from its normal colour to uniform grey. **BetterRTX** takes much better advantage of Ray Traced rendering in order to greatly improve the visuals during rainfall. The mod adds increased volumetric fog during rainy weather, and implements puddles through mapping a noise function to the terrain. A ray is traced upwards from the puddle surface with a random offset to determine if the sky is reachable, in order to naturally transition from wet to dry spaces under rain-blocking geometry.
+During weather events such as rainfall, Minecraft RTX only employed one additional visual effect: the sky would transition from its normal colour to uniform grey. **BetterRTX** takes much better advantage of Ray Traced rendering to greatly improve the visuals during rainfall. The mod adds increased volumetric fog during rainy weather, and implements puddles through mapping a noise function to the terrain. A ray is traced upwards from the puddle surface with a random offset to determine if the sky is reachable, in order to naturally transition from wet to dry spaces under rain-blocking geometry.
 ```cpp
 float wetness = 0.0;
 bool isSurfaceFacingUpward = false;
@@ -116,7 +116,7 @@ if (rainLevel > 0.0 && objectCategory != OBJECT_CATEGORY_WATER && dot(geometryIn
 | ![](./images/weather/rain_rtx.png) | ![](./images/weather/rain_brtx.png) |
 
 ## Reflected Water Caustics
-**BetterRTX** introduces water caustics through sunlight reflections off of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to reflect off of water is traced backwards to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
+**BetterRTX** introduces water caustics through sunlight reflections off of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to reflect off of water is traced backward to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
 ```cpp
 float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToSun)
 {
@@ -153,7 +153,7 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 | ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
 
 ## Motion Blur
-After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's [GPU Gems 3](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-27-motion-blur-post-processing-effect), and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by it's unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant of motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to current frametime to make the perceived motion blur intensity remain the same no matter the current framerate.
+After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's [GPU Gems 3](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-27-motion-blur-post-processing-effect), and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by its unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to the current frame time to make the perceived motion blur intensity remain the same no matter the current framerate.
 ```cpp
 // Get motion vector UV for this pixel
 float2 motionUv = inputBufferMotionVectors[ipos];
@@ -217,7 +217,7 @@ Normally within Minecraft, placing any block with an explicit point light (Torch
 | ![](./images/transmission/reflection_rtx.png) | ![](./images/transmission/reflection_brtx.png) |
 
 ## Status Effects
-The fog used by the darkness and blindness effects leaves a lot to be desired. Skylight leaks though the fog in both specular reflections and in transmission through water, ruining any sense of immersion these status effects could provide. The Darkness effect also failed to include the iconic exposure pulses present outside of the Ray Traced renderer. **BetterRTX** solves all of these issues, through properly implementing the fog gained from these effects into both specular reflections and in light transmission, making sure to implement period exposure pulses while under the Darkness effect to match the feature present in the rasterized Minecraft renderer.
+The fog used by the darkness and blindness effects leaves a lot to be desired. Skylight leaks through the fog in both specular reflections and in transmission through water, ruining any sense of immersion these status effects could provide. The Darkness effect also failed to include the iconic exposure pulses present outside of the Ray Traced renderer. **BetterRTX** solves all of these issues, by properly implementing the fog gained from these effects into both specular reflections and in light transmission, making sure to implement period exposure pulses while under the Darkness effect to match the feature present in the rasterized Minecraft renderer.
 
 Demo Video:
 [![](https://img.youtube.com/vi/TVbaB-LQ1-g/maxresdefault.jpg)](http://www.youtube.com/watch?v=TVbaB-LQ1-g&t=43s)
