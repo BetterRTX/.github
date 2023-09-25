@@ -8,7 +8,7 @@ At the moment, the team consists of two developers, several playtesters and a re
 Due to the nature of the mod's creation process, the source code likely contains a sizeable portion of Minecraft's original shader code (even despite the inconsitencies that our decompiling process introduces), so publishing it on Github may lead to a DMCA takedown. It is for this reason that I am instead creating a repository that provides an overview of the major additions BetterRTX brings to the game, along with some snippets of the code used to implement the new features. 
 
 # New Features:
-## Sun and Shadow
+## Sun and Shadows
 Various improvements to sun lighting have been introduced. The first of these improvements is in the azimuth and zenith of the sun's path throughout the day. Previously, the sun traveled along a path parallel to the world, leading to poor shading of block surfaces at nearly all times of the day. This directly led to poor visuals at noon, due to the apparent lack of shadows present. **BetterRTX** offsets the azimuth and zenith to avoid any situations where the sun is directly overhead. This is achieved through a matrix rotation of the `directionToSun` variable made available through the view buffer. The rotation is optionally invertable as it is used to change the direction of the sun texture.
 ```cpp
 float3 rotateBySunAngle(float3 dir, bool inverse = false)
@@ -114,3 +114,39 @@ if (rainLevel > 0.0 && objectCategory != OBJECT_CATEGORY_WATER && dot(geometryIn
 | Vanilla Rainfall | BetterRTX Rainfall |
 | :-: | :-: |
 | ![](./images/weather/rain_rtx.png) | ![](./images/weather/rain_brtx.png) |
+
+# Reflected Water Caustics
+**BetterRTX** introduces water caustics through sunlight reflections on the surface of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to relfect off of a water surface is traced backwards to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
+```cpp
+float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToSun)
+{
+	float3 transmission = 0..xxx;
+	const float3 waterTestRayDirection = -reflect(-directionToSun, float3(0.0, 1.0, 0.0));
+	if (dot(waterTestRayDirection, normal) > 0.0)
+	{
+		RayDesc waterTestRay;
+		waterTestRay.Origin = offset_ray(origin, normal);
+		waterTestRay.Direction = waterTestRayDirection;
+		waterTestRay.TMin = 0.f;
+		waterTestRay.TMax = REFLECTED_WATER_CAUSTICS_CUTOFF;
+		HitInfo waterTestRayHitInfo;
+		TraceGenericRay(RAY_FLAG_NONE, INSTANCE_MASK_SECONDARY, false, waterTestRay, waterTestRayHitInfo);
+		if (waterTestRayHitInfo.hasHit() && waterTestRayHitInfo.GetObjectCategory() == OBJECT_CATEGORY_WATER)
+		{
+			RayDesc shadowTestRay;
+			shadowTestRay.Origin = mad(waterTestRayDirection, waterTestRayHitInfo.hitT, waterTestRay.Origin);
+			shadowTestRay.Direction = directionToSun;
+			shadowTestRay.TMin = 0.001;
+			shadowTestRay.TMax = MAX_SECONDARY_DISTANCE;
+			HitInfo shadowTestRayHitInfo;
+			TraceGenericRay(RAY_FLAG_NONE, INSTANCE_MASK_SHADOW & ~INSTANCE_MASK_WATER, false, shadowTestRay, shadowTestRayHitInfo);
+			ObjectInstance objectInstance = objectInstances[shadowTestRayHitInfo.GetInstanceIdx()];
+			if (!shadowTestRayHitInfo.hasHit() || objectInstance.flags & kObjectInstanceFlagClouds) transmission = calcReflectedWaterCaustics(shadowTestRay.Origin, waterTestRayHitInfo.hitT).xxx;
+		}
+	}
+	return transmission;
+}
+```
+| Vanilla | BetterRTX |
+| :-: | :-: |
+| ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
