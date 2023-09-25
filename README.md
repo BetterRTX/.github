@@ -153,7 +153,7 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 | ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
 
 ## Motion Blur
-After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's GPU Gems 3, and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by it's unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant of motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to current frametime to make the perceived motion blur intensity remain the same no matter the current framerate.
+After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's [GPU Gems 3](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-27-motion-blur-post-processing-effect), and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by it's unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant of motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to current frametime to make the perceived motion blur intensity remain the same no matter the current framerate.
 ```cpp
 // Get motion vector UV for this pixel
 float2 motionUv = inputBufferMotionVectors[ipos];
@@ -185,7 +185,7 @@ float mtotalWeight = 1.0;
 finalColour /= mtotalWeight;
 ```
 Demo Video:
-[![](https://i3.ytimg.com/vi/vKGCLTsGEak/maxresdefault.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
+[![](https://img.youtube.com/vi/vKGCLTsGEak/maxresdefault.jpg)](http://www.youtube.com/watch?v=vKGCLTsGEak)
 
 # Bug Fixes:
 ## Spectator Mode
@@ -215,3 +215,9 @@ Normally within Minecraft, placing any block with an explicit point light (Torch
 | :-: | :-: |
 | ![](./images/transmission/point_light_rtx.png) | ![](./images/transmission/point_light_brtx.png) |
 | ![](./images/transmission/reflection_rtx.png) | ![](./images/transmission/reflection_brtx.png) |
+
+## Status Effects
+The fog used by the darkness and blindness effects leaves a lot to be desired. Skylight leaks though the fog in both specular reflections and in transmission through water, ruining any sense of immersion these status effects could provide. The Darkness effect also failed to include the iconic exposure pulses present outside of the Ray Traced renderer. **BetterRTX** solves all of these issues, through properly implementing the fog gained from these effects into both specular reflections and in light transmission, making sure to implement period exposure pulses while under the Darkness effect to match the feature present in the rasterized Minecraft renderer.
+
+Demo Video:
+[![](https://img.youtube.com/vi/TVbaB-LQ1-g/maxresdefault.jpg)](http://www.youtube.com/watch?v=TVbaB-LQ1-g&t=43s)
