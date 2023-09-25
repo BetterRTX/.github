@@ -115,8 +115,8 @@ if (rainLevel > 0.0 && objectCategory != OBJECT_CATEGORY_WATER && dot(geometryIn
 | :-: | :-: |
 | ![](./images/weather/rain_rtx.png) | ![](./images/weather/rain_brtx.png) |
 
-# Reflected Water Caustics
-**BetterRTX** introduces water caustics through sunlight reflections on the surface of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to relfect off of a water surface is traced backwards to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
+## Reflected Water Caustics
+**BetterRTX** introduces water caustics through sunlight reflections off of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to reflect off of water is traced backwards to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
 ```cpp
 float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToSun)
 {
@@ -141,7 +141,8 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 			HitInfo shadowTestRayHitInfo;
 			TraceGenericRay(RAY_FLAG_NONE, INSTANCE_MASK_SHADOW & ~INSTANCE_MASK_WATER, false, shadowTestRay, shadowTestRayHitInfo);
 			ObjectInstance objectInstance = objectInstances[shadowTestRayHitInfo.GetInstanceIdx()];
-			if (!shadowTestRayHitInfo.hasHit() || objectInstance.flags & kObjectInstanceFlagClouds) transmission = calcReflectedWaterCaustics(shadowTestRay.Origin, waterTestRayHitInfo.hitT).xxx;
+			if (!shadowTestRayHitInfo.hasHit() || objectInstance.flags & kObjectInstanceFlagClouds)
+				transmission = calcReflectedWaterCaustics(shadowTestRay.Origin, waterTestRayHitInfo.hitT).xxx;
 		}
 	}
 	return transmission;
@@ -150,3 +151,25 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 | Vanilla | BetterRTX |
 | :-: | :-: |
 | ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
+
+# Bug Fixes:
+## Spectator Mode
+Spectator is a game mode within Minecraft meant to provide players with the opportunity to spectate their worlds without interacting with anything. One of the headlining features of the game mode is the ability to see through the back faces of blocks while inside of them, enabling players to see within enclosed spaces without needing to be positioned inside such spaces. This feature unfortunately isn't functional with Ray Tracing by default. **BetterRTX** fixes the issue through a simple check for primary rays, replacing them with new rays placed behind the back faces of blocks should the original ray hit the back face of one.
+```cpp
+// If this is a primary ray and has hit a surface
+if (numBounces == 0 && primaryHitInfo.hasHit()) {
+	ObjectInstance objectInstance = objectInstances[primaryHitInfo.GetInstanceIdx()];
+	primaryGeometryInfo = GetGeometryInfo(primaryHitInfo, kGeometryModeSingleSided, primaryRay.Direction);
+	// If primary ray hits the backside of an opaque block, send another ray behind it's surface to act
+	// as the original, then add their ray distances together for reprojection purposes
+	if (!primaryGeometryInfo.isFrontFace && objectInstance.objectCategory == OBJECT_CATEGORY_OPAQUE && objectInstance.flags & kObjectInstanceFlagChunk) {
+		float hitDist = primaryHitInfo.hitT;
+		primaryRay.Origin = offset_ray(primaryGeometryInfo.position, -primaryGeometryInfo.normal);
+		TraceGenericRay(cullingFlag, instanceMask, true, primaryRay, primaryHitInfo);
+		primaryHitInfo.hitT += hitDist;
+	}
+}
+```
+| Vanilla | BetterRTX |
+| :-: | :-: |
+| ![](./images/spectator/spectate_rtx.png) | ![](./images/spectator/spectate_brtx.png) |
