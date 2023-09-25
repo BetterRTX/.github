@@ -45,4 +45,7 @@ Previously, the atmosphere visuals were achieved through projecting a texture on
 | :-: | :-: |
 | ![](./images/atmosphere/dawn_rtx.png) | ![](./images/atmosphere/dawn_brtx.png) |
 
-The percieved brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere wasn't sampled when determining exposure value.
+The percieved brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
+
+## Water Parallax Mapping
+The previous water rendering method has been widely considered lackluster by the community, as it relies solely on an animated normal map in order to exhibit the notion of waving water. The visual presentation of this effect is hindered even more through the poorly implemened LOD system in place: normal mapping stops applying to the surface of water at a dissapointingly short distance from the camera. This lead to water appearing completely static in most camera positions. **BetterRTX** includes several improvements to water directly addressing these issues. The surface of water is now displaced over time 
