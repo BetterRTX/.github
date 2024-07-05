@@ -32,18 +32,18 @@ float3 rotateBySunAngle(float3 dir, bool inverse = false)
 ```
 | Vanilla at Noon | BetterRTX at Noon |
 | :-: | :-: |
-| ![](./images/sun_shadow/noon_rtx.png) | ![](./images/sun_shadow/noon_brtx.png) |
+| ![](/images/sun_shadow/noon_rtx.png) | ![](/images/sun_shadow/noon_brtx.png) |
 
 Sun shadow clarity has also been heavily improved, through both reducing the sun's sampling radius and improving shadow filtering behaviours. 
 | Vanilla Sun Shadows | BetterRTX Sun Shadows |
 | :-: | :-: |
-| ![](./images/sun_shadow/shadow_rtx.png) | ![](./images/sun_shadow/shadow_brtx.png) |
+| ![](/images/sun_shadow/shadow_rtx.png) | ![](/images/sun_shadow/shadow_brtx.png) |
 
 ## Revamped Atmosphere:
 Previously, the atmosphere visuals were achieved by projecting a texture onto the sky and slowly animating it throughout a day/night cycle, with each frame corresponding to a different time of day. This approach exhibited several caveats. Due to the low resolution of the texture (64x32 per frame), artifacts such as colour banding were prevalent throughout the sky. There were even some downscaling artifacts between frames, with colour from one bleeding into the next (leading to a dark dot near the zenith). **BetterRTX** solves all of these issues through introducing a physically based simulation of Rayleigh and Mie scattering to render the atmosphere.
 | Vanilla at Dawn | BetterRTX at Dawn |
 | :-: | :-: |
-| ![](./images/atmosphere/dawn_rtx.png) | ![](./images/atmosphere/dawn_brtx.png) |
+| ![](/images/atmosphere/dawn_rtx.png) | ![](/images/atmosphere/dawn_brtx.png) |
 
 The apparent brightness of the sky has also decreased, since before BetterRTX luminance from the atmosphere was not sampled when determining exposure value.
 
@@ -72,7 +72,7 @@ float calcWaterSurfaceHeight(float3 stepPos)
 ```
 | Vanilla Water | BetterRTX Water |
 | :-: | :-: |
-| ![](./images/water/water_rtx.png) | ![](./images/water/water_brtx.png) |
+| ![](/images/water/water_rtx.png) | ![](/images/water/water_brtx.png) |
 
 ## Rain Puddles:
 During weather events such as rainfall, Minecraft RTX only employed one additional visual effect: the sky would transition from its normal colour to uniform grey. **BetterRTX** takes much better advantage of Ray Traced rendering to greatly improve the visuals during rainfall. The mod adds increased volumetric fog during rainy weather, and implements puddles through mapping a noise function to the terrain. A ray is traced upwards from the puddle surface with a random offset to determine if the sky is reachable, in order to naturally transition from wet to dry spaces under rain-blocking geometry.
@@ -113,7 +113,7 @@ if (rainLevel > 0.0 && objectCategory != OBJECT_CATEGORY_WATER && dot(geometryIn
 ```
 | Vanilla Rainfall | BetterRTX Rainfall |
 | :-: | :-: |
-| ![](./images/weather/rain_rtx.png) | ![](./images/weather/rain_brtx.png) |
+| ![](/images/weather/rain_rtx.png) | ![](/images/weather/rain_brtx.png) |
 
 ## Reflected Water Caustics:
 **BetterRTX** introduces water caustics through sunlight reflections off of water to enhance the level of realism achieved with the renderer. From each point on a surface, the path sunlight would take to reflect off of water is traced backward to determine if reflected sunlight is capable of reaching that point. If so, the animated caustics texture is sampled and added to the illuminance of the surface.
@@ -150,7 +150,7 @@ float3 sampleReflectedCaustics(float3 origin, float3 normal, float3 directionToS
 ```
 | Vanilla | BetterRTX |
 | :-: | :-: |
-| ![](./images/reflected_caustics/caustics_rtx.png) | ![](./images/reflected_caustics/caustics_brtx.png) |
+| ![](/images/reflected_caustics/caustics_rtx.png) | ![](/images/reflected_caustics/caustics_brtx.png) |
 
 ## Motion Blur:
 After a bit of research into different methods of implementing the feature, I based my implementation of motion blur on the method outlined in Nvidia's [GPU Gems 3](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-27-motion-blur-post-processing-effect), and modified it with a custom weighted average. The motion vectors are pulled from the existing buffer, and are then used as the path that each colour sample is taken from for use in the final average. To make the blur respond to different magnitudes and directions of motion, I weighed each colour sample across the pixel path by its unique motion vector projected onto the origin pixel's motion vector. This prevents pixels undergoing significant motion from sampling static pixels for motion blur. Motion blur intensity is made inversely proportional to the current frame time to make the perceived motion blur intensity remain the same no matter the current framerate.
@@ -232,14 +232,14 @@ if (numBounces == 0 && primaryHitInfo.hasHit()) {
 ```
 | Vanilla | BetterRTX |
 | :-: | :-: |
-| ![](./images/spectator/spectate_rtx.png) | ![](./images/spectator/spectate_brtx.png) |
+| ![](/images/spectator/spectate_rtx.png) | ![](/images/spectator/spectate_brtx.png) |
 
 ## Light Transmission:
 Normally within Minecraft, placing any block with an explicit point light (Torches, End Rods, Lanterns) behind glass would fail to properly transmit its light through coloured materials. Emissive surfaces fail to properly transmit their emission in reflections as well. **BetterRTX** introduces a few changes that properly implement these missing features.
 | Vanilla | BetterRTX |
 | :-: | :-: |
-| ![](./images/transmission/point_light_rtx.png) | ![](./images/transmission/point_light_brtx.png) |
-| ![](./images/transmission/reflection_rtx.png) | ![](./images/transmission/reflection_brtx.png) |
+| ![](/images/transmission/point_light_rtx.png) | ![](/images/transmission/point_light_brtx.png) |
+| ![](/images/transmission/reflection_rtx.png) | ![](/images/transmission/reflection_brtx.png) |
 
 ## Status Effects:
 The fog used by the darkness and blindness effects leaves a lot to be desired. Skylight leaks through the fog in both specular reflections and in transmission through water, ruining any sense of immersion these status effects could provide. The Darkness effect also failed to include the iconic exposure pulses present outside of the Ray Traced renderer. **BetterRTX** solves all of these issues, by properly implementing the fog gained from these effects into both specular reflections and in light transmission, making sure to implement periodic exposure pulses while under the Darkness effect to match the feature present in the rasterized Minecraft renderer.
